@@ -35,7 +35,13 @@ source .venv/Scripts/activate
 
 ## 3. Instalar las dependencias
 
-Con el entorno activado, instala las dependencias definidas en [requirements.txt](requirements.txt):
+Con el entorno activado, primero actualiza `pip`:
+
+```powershell
+python -m pip install --upgrade pip
+```
+
+Luego instala las dependencias definidas en [requirements.txt](requirements.txt):
 
 ```powershell
 pip install -r requirements.txt
@@ -60,6 +66,7 @@ Esto iniciará el servidor de desarrollo y, normalmente, la API quedará disponi
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 fastapi dev main.py
 ```
