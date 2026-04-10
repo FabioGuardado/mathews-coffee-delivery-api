@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+from app.database import lifespan
+from app.routes import drivers, orders
+
+app = FastAPI(title="Mathews Coffee Delivery API", lifespan=lifespan)
+
+app.include_router(drivers.router, prefix="/drivers", tags=["drivers"])
+app.include_router(orders.router, prefix="/orders", tags=["orders"])
 
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+    return {"status": "ok", "service": "Mathews Coffee Delivery API"}

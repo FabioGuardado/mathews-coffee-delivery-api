@@ -1,13 +1,13 @@
 # Mathews Coffee Delivery API
 
-## Requisitos previos
+## Requisitos
 
 - Python 3.10 o superior
-- Tener `pip` disponible en el sistema
+- Tener `pip` instalado
 
 ## 1. Crear el entorno virtual (`venv`)
 
-Desde la raíz del repositorio, crea el entorno virtual con:
+Desde la raíz del repositorio, crear el entorno virtual con:
 
 ```powershell
 python -m venv .venv
@@ -27,7 +27,7 @@ python -m venv .venv
 .venv\Scripts\activate.bat
 ```
 
-Si usas Git Bash:
+### Bash:
 
 ```bash
 source .venv/Scripts/activate
@@ -35,45 +35,57 @@ source .venv/Scripts/activate
 
 ## 3. Instalar las dependencias
 
-Con el entorno activado, primero actualiza `pip`:
+Con el entorno activado ejecutar:
 
 ```powershell
 python -m pip install --upgrade pip
 ```
 
-Luego instala las dependencias definidas en [requirements.txt](requirements.txt):
+Luego instalar las dependencias definidas en [requirements.txt](requirements.txt):
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-## 4. Ejecutar la aplicación en modo desarrollo
+## 4. Configurar variables de entorno
 
-Según la documentación oficial de FastAPI, para desarrollo puedes usar el comando `fastapi dev`. En este proyecto el archivo principal es [main.py](main.py) y la aplicación se expone como `app`, por lo que debes ejecutar:
+Crear archivo `.env` a partir de [.env.example](.env.example):
+
+### Powershell:
+
+```powershell
+copy .env.example .env
+```
+
+### Bash:
+
+```bash
+cp .env.example .env
+```
+
+### Completar los valores:
+
+```env
+MONGODB_URL=mongodb://localhost:27017
+DB_NAME=mathews_coffee_delivery
+```
+
+## 5. Ejecutar la aplicación en modo desarrollo
+
+Utilizar el siguiente comando para ejecutar la aplicación en el entorno local:
 
 ```powershell
 fastapi dev main.py
 ```
 
-Esto iniciará el servidor de desarrollo y, normalmente, la API quedará disponible en:
+Esto iniciará el servidor de desarrollo y la API quedará disponible en:
 
 - http://127.0.0.1:8000
 - http://127.0.0.1:8000/docs
 - http://127.0.0.1:8000/redoc
 
-## Flujo completo
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-fastapi dev main.py
-```
 
 ## Desactivar el entorno virtual
-
-Cuando termines de trabajar:
 
 ```powershell
 deactivate
