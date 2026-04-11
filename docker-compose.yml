@@ -1,0 +1,137 @@
+services:
+  configsvr1:
+    image: mongo:latest
+    container_name: configsvr1
+    command: ["mongod", "--configsvr", "--replSet", "configrs", "--bind_ip_all", "--port", "27017"]
+    volumes:
+      - configsvr1_data:/data/db
+    ports:
+      - "27019:27017"
+    networks:
+      - mongo-net
+ 
+  # Shard 1: Primario 
+  shard1-primary:
+    image: mongo:latest
+    container_name: shard1-primary
+    command: ["mongod", "--shardsvr", "--replSet", "shard1rs", "--bind_ip_all", "--port", "27017"]
+    volumes:
+      - shard1_primary_data:/data/db
+    ports:
+      - "27018:27017"
+    networks:
+      - mongo-net
+ 
+  # Shard 1: Secundario 
+  shard1-secondary:
+    image: mongo:latest
+    container_name: shard1-secondary
+    command: ["mongod", "--shardsvr", "--replSet", "shard1rs", "--bind_ip_all", "--port", "27017"]
+    volumes:
+      - shard1_secondary_data:/data/db
+    networks:
+      - mongo-net
+
+  shard1-arbiter:
+    image: mongo:latest
+    container_name: shard1-arbiter
+    command: ["mongod", "--shardsvr", "--replSet", "shard1rs", "--bind_ip_all", "--port", "27017"]
+    volumes:
+      - shard1_arbiter_data:/data/arb
+    networks:
+      - mongo-net
+ 
+  mongos:
+    image: mongo:latest
+    container_name: mongos
+    command: ["mongos", "--configdb", "configrs/configsvr1:27017", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    networks:
+      - mongo-net
+    depends_on:
+      - configsvr1
+      - shard1-primary
+      - shard1-secondary
+      - shard1-arbiter
+ 
+  # Inicialización del Cluster
+  mongo-init:
+    image: mongo:latest
+    container_name: mongo-init
+    restart: "no"
+    networks:
+      - mongo-net
+    depends_on:
+      - mongos
+    command: >
+      bash -c "
+        echo 'Esperando que los nodos estén listos...' &&
+        sleep 15 &&
+ 
+        echo '1/3 Inicializando Config Server RS...' &&
+        mongosh --host configsvr1 --port 27017 --eval '
+          rs.initiate({
+            _id: \"configrs\",
+            configsvr: true,
+            members: [{ _id: 0, host: \"configsvr1:27017\" }]
+          })
+        ' &&
+        sleep 5 &&
+ 
+        echo '2/3 Inicializando Shard 1 RS (primary + secondary + arbiter)...' &&
+        mongosh --host shard1-primary --port 27017 --eval '
+          rs.initiate({
+            _id: \"shard1rs\",
+            members: [
+              { _id: 0, host: \"shard1-primary:27017\"   },
+              { _id: 1, host: \"shard1-secondary:27017\" },
+              { _id: 2, host: \"shard1-arbiter:27017\", arbiterOnly: true }
+            ]
+          })
+        ' &&
+        sleep 15 &&
+ 
+        echo '3/3 Registrando shard y habilitando sharding en mathews_coffee_delivery...' &&
+        mongosh --host mongos --port 27017 --eval '
+          db.adminCommand({ setDefaultRWConcern: 1, defaultWriteConcern: { w: 1 } });
+          sh.addShard(\"shard1rs/shard1-primary:27017,shard1-secondary:27017\");
+          sh.enableSharding(\"mathews_coffee_delivery\");
+          sh.shardCollection(\"mathews_coffee_delivery.orders\", { region: 1 });
+        ' &&
+ 
+        echo 'Cluster inicializado correctamente.'
+      "
+ 
+  # Backup
+  backup:
+    image: weseek/mongodb-awesome-backup:latest
+    container_name: mongo_backup
+    restart: unless-stopped
+    environment:
+      - MONGODB_HOST=mongos
+      - MONGODB_PORT=27017
+      - TARGET_BUCKET_URL=gs://mathews-coffee-bucket/
+      - GCP_SERVICE_ACCOUNT_KEY_JSON_PATH=/keys/gcp-key.json
+      - GCP_PROJECT_ID=mathews-coffe
+      - BACKUPFILE_PREFIX=backup-proyecto
+      - CRONMODE=true
+      - CRON_EXPRESSION=*/5 * * * *
+    volumes:
+      - ./backups:/backups
+      - ./credentials/gcp-key.json:/keys/gcp-key.json:ro
+    networks:
+      - mongo-net
+    depends_on:
+      - mongos
+ 
+networks:
+  mongo-net:
+    driver: bridge
+ 
+volumes:
+  configsvr1_data:
+  shard1_primary_data:
+  shard1_secondary_data:
+  shard1_arbiter_data:
+ 
