@@ -20,9 +20,7 @@ Este proyecto forma parte de la asignatura **Base de Datos NoSQL**, donde se imp
   - [📦 Instalación del proyecto](#-instalación-del-proyecto)
   - [⚙️ Configuración](#️-configuración)
   - [🌐 Acceso a la API](#-acceso-a-la-api)
-  - [📌 Endpoints principales](#-endpoints-principales)
-    - [🧾 Orders](#-orders)
-    - [🚚 Drivers](#-drivers)
+  - [📌 Endpoints](#-endpoints)
   - [📊 Características implementadas](#-características-implementadas)
   - [🧠 Consideraciones técnicas](#-consideraciones-técnicas)
   - [🎓 Contexto académico](#-contexto-académico)
@@ -151,43 +149,9 @@ Esto iniciará el servidor de desarrollo y la API quedará disponible en:
 - Swagger UI: http://127.0.0.1:8000/docs
 - ReDoc: http://127.0.0.1:8000/redoc
 
-## 📌 Endpoints principales
+## 📌 Endpoints
 
-### 🧾 Orders
-
-- Obtener órdenes (con filtros y paginación)
-
-  ```http
-  GET /orders
-  ```
-
-- Parámetros:
-
-  | Parámetro     | Tipo   | Descripción          |
-  | ------------- | ------ | -------------------- |
-  | `status`      | string | Filtrar por estado   |
-  | `customer_id` | string | Filtrar por cliente  |
-  | `min_total`   | number | Total mínimo         |
-  | `max_total`   | number | Total máximo         |
-  | `page`        | int    | Página (default: 1)  |
-  | `limit`       | int    | Registros por página |
-
-### 🚚 Drivers
-
-- Obtener conductores
-
-  ```http
-  GET /drivers
-  ```
-
-- Parámetros:
-
-  | Parámetro | Tipo    | Descripción         |
-  | --------- | ------- | ------------------- |
-  | `name`    | string  | Búsqueda por nombre |
-  | `active`  | boolean | Estado activo       |
-  | `page`    | int     | Página              |
-  | `limit`   | int     | Registros           |
+> Para una referencia completa de todos los endpoints, parámetros y cuerpos de solicitud, consulta el archivo [ENDPOINTS.md](ENDPOINTS.md).
 
 ## 📊 Características implementadas
 
