@@ -26,7 +26,7 @@ Este proyecto forma parte de la asignatura **Base de Datos NoSQL**, donde se imp
   - [📊 Características implementadas](#-características-implementadas)
   - [🧠 Consideraciones técnicas](#-consideraciones-técnicas)
   - [🎓 Contexto académico](#-contexto-académico)
-  - [👨‍💻 Autores](#-autores)
+  - [👨‍💻 Autores - Grupo H](#-autores---grupo-h)
 
 ## 🚀 Tecnologías utilizadas
 
@@ -212,10 +212,10 @@ Este proyecto fue desarrollado como parte de la asignatura:
 - **Base de Datos II (NoSQL)**
 - Universidad Evangélica de El Salvador
 
-## 👨‍💻 Autores
+## 👨‍💻 Autores - Grupo H
 
-- Fabio Guardado
-- Dereck Méndez
-- Aldo Landaverde
-- Carlos
-- Juanjo
+- Fabio Ernesto Guardado Gil (2025010209)
+- Aldo Xavier Landaverde Miranda (2025010874)
+- Juan José Lara López (2025011034)
+- Dereck Henry Méndez Rodríguez (2025010371)
+- Carlos Mario Rivera Henríquez (2023011227)
