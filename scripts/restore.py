@@ -18,7 +18,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-CONTAINER = "mongo-clase3" # Cambiar por el nombre de tu contenedor
+CONTAINER = "mongos"  # Router del sharded cluster
 
 def listar_backups():
     backups = os.listdir(BACKUP_DIR)
@@ -51,7 +51,7 @@ def restaurar_backup():
         logging.info(f"Backup copiado: {selected_backup}")
 
         print("Restaurando base de datos...")
-        os.system(f'docker exec {CONTAINER} mongorestore {backup_path_container}')
+        os.system(f'docker exec {CONTAINER} mongorestore --host mongos:27017 {backup_path_container}')
         logging.info(f"Backup restaurado: {selected_backup}")
 
         print("Restauración completada")

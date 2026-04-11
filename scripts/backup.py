@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 
 # Configuración de backup
-CONTAINER = "mongo-clase3"
+CONTAINER = "mongos"
 DB = "mathews_coffee_delivery"
 BACKUP_DIR = "backups"
 
