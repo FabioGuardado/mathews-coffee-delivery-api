@@ -1,6 +1,6 @@
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from app.database import get_db
 from app.models.order import OrderCreate, OrderResponse, TimelineEvent
@@ -14,11 +14,53 @@ def parse_object_id(id: str) -> ObjectId:
     except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid id format")
 
+@router.get("/")
+async def list_orders(
+    status: str | None = Query(None),
+    customer_id: str | None = Query(None),
+    min_total: float | None = Query(None),
+    max_total: float | None = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    db=Depends(get_db)
+):
+    query = {}
 
-@router.get("/", response_model=list[OrderResponse])
+    # FILTRO 1: status
+    if status:
+        query["status"] = status
+
+    # FILTRO 2: customer_id
+    if customer_id:
+        query["customer_id"] = customer_id
+
+    # FILTRO 3: rango de total
+    if min_total is not None or max_total is not None:
+        query["total"] = {}
+        if min_total is not None:
+            query["total"]["$gte"] = min_total
+        if max_total is not None:
+            query["total"]["$lte"] = max_total
+
+    # Paginación
+    skip = (page - 1) * limit
+
+    # Consulta con filtros y paginación
+    cursor = db.orders.find(query).skip(skip).limit(limit)
+    orders = await cursor.to_list(length=limit)
+    total = await db.orders.count_documents(query)
+
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "data": orders
+    }
+
+"""@router.get("/", response_model=list[OrderResponse])
 async def list_orders(db=Depends(get_db)):
     orders = await db.orders.find().to_list(length=None)
-    return orders
+    return orders"""
 
 
 @router.get("/{id}", response_model=OrderResponse)
