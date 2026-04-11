@@ -32,9 +32,9 @@ async def list_orders(
 ):
     query = {}
 
-    # FILTRO 1: status (busca dentro de los elementos del timeline)
+    # FILTRO 1: status
     if status:
-        query["timeline.status"] = status
+        query["$expr"] = {"$eq": [{"$last": "$timeline.status"}, status]}
 
     # FILTRO 2: customer_id
     if customer_id:
