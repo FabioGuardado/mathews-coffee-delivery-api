@@ -14,10 +14,16 @@ def parse_object_id(id: str) -> ObjectId:
     except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid id format")
 
+
+def serialize_order(doc: dict) -> dict:
+    if "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
 @router.get("/")
 async def list_orders(
     status: str | None = Query(None),
-    customer_id: str | None = Query(None),
+    customer_id: int | None = Query(None),
     min_total: float | None = Query(None),
     max_total: float | None = Query(None),
     page: int = Query(1, ge=1),
@@ -26,9 +32,9 @@ async def list_orders(
 ):
     query = {}
 
-    # FILTRO 1: status
+    # FILTRO 1: status (busca dentro de los elementos del timeline)
     if status:
-        query["status"] = status
+        query["timeline.status"] = status
 
     # FILTRO 2: customer_id
     if customer_id:
@@ -45,23 +51,66 @@ async def list_orders(
     # Paginación
     skip = (page - 1) * limit
 
-    # Consulta con filtros y paginación
     cursor = db.orders.find(query).skip(skip).limit(limit)
     orders = await cursor.to_list(length=limit)
     total = await db.orders.count_documents(query)
+
+    serialized_orders = [serialize_order(order) for order in orders]
 
     return {
         "total": total,
         "page": page,
         "limit": limit,
-        "data": orders
+        "data": serialized_orders
     }
 
-"""@router.get("/", response_model=list[OrderResponse])
-async def list_orders(db=Depends(get_db)):
-    orders = await db.orders.find().to_list(length=None)
-    return orders"""
 
+@router.get("/by-driver")
+async def list_orders_by_driver(
+    driver_name: str = Query(...),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    db=Depends(get_db)
+):
+    skip = (page - 1) * limit
+    pipeline = [
+        {"$addFields": {"driver_oid": {"$toObjectId": "$driver_id"}}},
+        {
+            "$lookup": {
+                "from": "drivers",
+                "localField": "driver_oid",
+                "foreignField": "_id",
+                "as": "driver"
+            }
+        },
+        {"$unwind": {"path": "$driver", "preserveNullAndEmptyArrays": True}},
+        {
+            "$match": {
+                "$or": [
+                    {"driver.name": {"$regex": driver_name, "$options": "i"}},
+                    {"driver.lastname": {"$regex": driver_name, "$options": "i"}},
+                ]
+            }
+        },
+    ]
+
+    count_result = await db.orders.aggregate(
+        pipeline + [{"$count": "total"}]
+    ).to_list(length=1)
+    total = count_result[0]["total"] if count_result else 0
+
+    cursor = db.orders.aggregate(
+        pipeline + [{"$skip": skip}, {"$limit": limit}, {"$unset": ["driver", "driver_oid"]}]
+    )
+    orders = await cursor.to_list(length=limit)
+    serialized_orders = [serialize_order(order) for order in orders]
+
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "data": serialized_orders
+    }
 
 @router.get("/{id}", response_model=OrderResponse)
 async def get_order(id: str, db=Depends(get_db)):
@@ -79,6 +128,16 @@ async def create_order(payload: OrderCreate, db=Depends(get_db)):
     return created
 
 
+@router.put("/{id}", response_model=OrderResponse)
+async def update_order(id: str, payload: OrderCreate, db=Depends(get_db)):
+    oid = parse_object_id(id)
+    result = await db.orders.replace_one({"_id": oid}, payload.model_dump())
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    updated = await db.orders.find_one({"_id": oid})
+    return updated
+
+
 @router.post("/{id}/timeline", response_model=OrderResponse)
 async def append_timeline_event(id: str, event: TimelineEvent, db=Depends(get_db)):
     oid = parse_object_id(id)
@@ -90,10 +149,3 @@ async def append_timeline_event(id: str, event: TimelineEvent, db=Depends(get_db
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     updated = await db.orders.find_one({"_id": oid})
     return updated
-
-
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_order(id: str, db=Depends(get_db)):
-    result = await db.orders.delete_one({"_id": parse_object_id(id)})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
