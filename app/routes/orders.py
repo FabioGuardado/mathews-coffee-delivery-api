@@ -30,30 +30,71 @@ async def list_orders(
     limit: int = Query(10, ge=1, le=100),
     db=Depends(get_db)
 ):
-    query = {}
+    skip = (page - 1) * limit
+
+    pipeline = []
+
+    # Calcular total dinámicamente
+    pipeline.append({
+        "$addFields": {
+            "total": {
+                "$sum": {
+                    "$map": {
+                        "input": "$items_summary",
+                        "as": "item",
+                        "in": {
+                            "$multiply": ["$$item.qty", "$$item.unit_price"]
+                        }
+                    }
+                }
+            }
+        }
+    })
+
+    # Obtener último status correctamente
+    pipeline.append({
+        "$addFields": {
+            "last_status": {
+                "$arrayElemAt": ["$timeline.status", -1]
+            }
+        }
+    })
+
+    match_stage = {}
 
     # FILTRO 1: status
     if status:
-        query["$expr"] = {"$eq": [{"$last": "$timeline.status"}, status]}
+        match_stage["last_status"] = status
 
     # FILTRO 2: customer_id
     if customer_id:
-        query["customer_id"] = customer_id
+        match_stage["customer_id"] = customer_id
 
-    # FILTRO 3: rango de total
+    # FILTRO 3: total
     if min_total is not None or max_total is not None:
-        query["total"] = {}
+        match_stage["total"] = {}
         if min_total is not None:
-            query["total"]["$gte"] = min_total
+            match_stage["total"]["$gte"] = min_total
         if max_total is not None:
-            query["total"]["$lte"] = max_total
+            match_stage["total"]["$lte"] = max_total
+
+    if match_stage:
+        pipeline.append({"$match": match_stage})
 
     # Paginación
-    skip = (page - 1) * limit
+    pipeline.extend([
+        {"$skip": skip},
+        {"$limit": limit}
+    ])
 
-    cursor = db.orders.find(query).skip(skip).limit(limit)
+    # Ejecutar consulta
+    cursor = db.orders.aggregate(pipeline)
     orders = await cursor.to_list(length=limit)
-    total = await db.orders.count_documents(query)
+
+    # Conteo total
+    count_pipeline = pipeline[:-2] + [{"$count": "total"}]
+    count_result = await db.orders.aggregate(count_pipeline).to_list(length=1)
+    total = count_result[0]["total"] if count_result else 0
 
     serialized_orders = [serialize_order(order) for order in orders]
 
@@ -63,7 +104,6 @@ async def list_orders(
         "limit": limit,
         "data": serialized_orders
     }
-
 
 @router.get("/by-driver")
 async def list_orders_by_driver(
