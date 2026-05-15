@@ -1,6 +1,6 @@
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.database import get_db
 from app.models.driver import DriverCreate, DriverResponse
@@ -31,25 +31,19 @@ async def list_drivers(
 ):
     query = {}
 
-    # Filtro 1: nombre o apellido
     if name:
         query["$or"] = [
             {"name": {"$regex": name, "$options": "i"}},
             {"lastname": {"$regex": name, "$options": "i"}},
         ]
 
-    # Filtro 2: activo
     if active is not None:
         query["active"] = active
 
-    # Filtro 3: Tipo de vehículo (opcional)
     if vehicle_type:
         query["vehicle.type"] = vehicle_type
 
-    # Paginación
     skip = (page - 1) * limit
-
-    # Consulta con filtros y paginación
     cursor = db.drivers.find(query).skip(skip).limit(limit)
     drivers = await cursor.to_list(length=limit)
     total = await db.drivers.count_documents(query)
