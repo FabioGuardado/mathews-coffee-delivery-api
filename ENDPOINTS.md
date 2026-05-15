@@ -268,7 +268,7 @@
     "driver_id": "...",
     "date": "2025-05-01",
     "points": [
-      { "ts": "2025-05-01T14:00:00", "lat": -0.18, "lng": -78.48, "heading": 90, "speed": 32.5, "order_id": 4502 }
+      { "ts": "2025-05-01T14:00:00", "lat": 13.6963066, "lng": -89.1926105, "heading": 90, "speed": 32.5, "order_id": 4502 }
     ]
   }
   ```
@@ -293,7 +293,7 @@
   {
     "order_id": 4502,
     "points": [
-      { "ts": "2025-05-01T14:00:00", "lat": -0.18, "lng": -78.48, "heading": 90, "speed": 32.5, "driver_id": "..." }
+      { "ts": "2025-05-01T14:00:00", "lat": 13.6963066, "lng": -89.1926105, "heading": 90, "speed": 32.5, "driver_id": "..." }
     ]
   }
   ```
@@ -327,7 +327,7 @@
   **Mensaje del driver → servidor (JSON):**
 
   ```json
-  { "order_id": 4502, "lat": -0.18, "lng": -78.48, "heading": 90, "speed": 32.5 }
+  { "order_id": 4502, "lat": 13.6963066, "lng": -89.1926105, "heading": 90, "speed": 32.5 }
   ```
 
   | Campo      | Tipo   | Requerido | Descripción                   |
